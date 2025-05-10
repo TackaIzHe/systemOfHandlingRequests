@@ -3,6 +3,7 @@ import { ApiError } from "../error/ApiError";
 import { DbContext } from "../database/bd";
 import { Recourse } from "../entity/Recourse";
 import { Responce } from "../entity/Responce";
+import { Between } from "typeorm";
 
 export class RequestController{
     static async getAllOrDate(req:Request, res:Response, next:NextFunction){
@@ -17,7 +18,7 @@ export class RequestController{
             if(start.split('-').length >2){
                 const date = start.split('-')
                 const sortDate = new Date(Number(date[0]),Number(date[1])-1,Number(date[2])).getTime()
-                const endDate = sortDate + +86399999
+                const endDate = sortDate + 86399999
                 const sortRecourse = recourses.map((x)=>{
                     if(x.date>=sortDate && x.date <=endDate){
                         return({
@@ -132,6 +133,33 @@ export class RequestController{
 
     static async getRecourseInBeetwenDate(req:Request, res:Response, next:NextFunction){
         try{
+            const {start, end} = req.params
+            const formatStart = start.split('-')
+            const formatEnd = end.split('-')
+            if(!start || !end || formatStart.length < 2 || formatEnd.length < 2){
+                return next(ApiError.badData())
+            }
+            const startDate = new Date(Number(formatStart[0]), Number(formatStart[1])-1, Number(formatStart[2])).getTime()
+            const endDate = new Date(Number(formatEnd[0]), Number(formatEnd[1])-1, Number(formatEnd[2])).getTime()
+            const formatEndDate = new Date(endDate + 86399999).getTime()
+
+            const recourseRepo = DbContext.getRepository(Recourse)
+            const recorses = await recourseRepo.find({
+                where:{date:Between(startDate,formatEndDate)},
+                relations:['responce']})
+            if(!recorses){
+                return next(ApiError.badData())
+            }
+            return res.status(200).json(recorses.map((x)=>{
+                return ({
+                    id:x.id,
+                    state:x.state,
+                    header:x.header,
+                    text:x.text,
+                    date:new Date(x.date),
+                    responce:x.responce
+                })
+            }))
 
         }catch(err){
             console.log(err)
@@ -141,8 +169,13 @@ export class RequestController{
 
     static async cancelAllToWork(req:Request, res:Response, next:NextFunction){
         try{
-            console.log(1)
-            res.json("asd")
+            const recourseRepo = DbContext.getRepository(Recourse)
+            const recourses = await recourseRepo.find({where:{state:'inWorking'}})
+            if(recourses.length === 0){
+                return res.status(200).json("Нет обращений в работе")
+            }
+            await recourseRepo.update(recourses,{state:'cancel'})
+            return res.status(200).json("Обращения отменены")
         }catch(err){
             console.log(err)
             return next(ApiError.serverError())
