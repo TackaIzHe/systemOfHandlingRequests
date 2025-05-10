@@ -9,7 +9,6 @@ export class RequestController{
     static async getAllOrDate(req:Request, res:Response, next:NextFunction){
         try{
             const {start} = req.params
-            console.log(start)
             const recourseRepo = DbContext.getRepository(Recourse)
             const recourses = await recourseRepo.find({relations:['responce']})
             if(recourses.length === 0){
