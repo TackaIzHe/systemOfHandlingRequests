@@ -5,14 +5,44 @@ import { Recourse } from "../entity/Recourse";
 import { Responce } from "../entity/Responce";
 
 export class RequestController{
-    static async getAll(req:Request, res:Response, next:NextFunction){
+    static async getAllOrDate(req:Request, res:Response, next:NextFunction){
         try{
+            const {start} = req.params
+            console.log(start)
             const recourseRepo = DbContext.getRepository(Recourse)
             const recourses = await recourseRepo.find({relations:['responce']})
             if(recourses.length === 0){
                 res.status(200).json("Нет обращений")
             }
-            res.status(200).json(recourses)
+            if(start.split('-').length >2){
+                const date = start.split('-')
+                const sortDate = new Date(Number(date[0]),Number(date[1])-1,Number(date[2])).getTime()
+                const endDate = sortDate + +86399999
+                const sortRecourse = recourses.map((x)=>{
+                    if(x.date>=sortDate && x.date <=endDate){
+                        return({
+                            id:x.id,
+                            state:x.state,
+                            header:x.header,
+                            text:x.text,
+                            date:new Date(x.date),
+                            responce:x.responce
+                        })
+                    }
+                })
+                if(sortRecourse.length === 0 || sortRecourse[0] == null){
+                    return res.status(200).json("Нет обращений")
+                }
+                return res.status(200).json(sortRecourse)
+            }
+            return res.status(200).json(recourses.map((x)=>{return({
+                id:x.id,
+                state:x.state,
+                header:x.header,
+                text:x.text,
+                date:new Date(x.date),
+                responce:x.responce
+            })}))
             }catch(err){
             console.log(err)
             return next(ApiError.serverError())
@@ -26,7 +56,7 @@ export class RequestController{
                 return next(ApiError.badData())
             }
             const recourseRepo = DbContext.getRepository(Recourse)
-            const createRecourse = recourseRepo.create({state:'new',header:header,text:text})
+            const createRecourse = recourseRepo.create({state:'new',header:header,text:text,date:new Date().getTime()})
             await recourseRepo.save(createRecourse)
             res.status(201).json('Обращение создано');
         }catch(err){
@@ -100,7 +130,7 @@ export class RequestController{
         }
     }
 
-    static async getRecourse(req:Request, res:Response, next:NextFunction){
+    static async getRecourseInBeetwenDate(req:Request, res:Response, next:NextFunction){
         try{
 
         }catch(err){
@@ -111,7 +141,8 @@ export class RequestController{
 
     static async cancelAllToWork(req:Request, res:Response, next:NextFunction){
         try{
-
+            console.log(1)
+            res.json("asd")
         }catch(err){
             console.log(err)
             return next(ApiError.serverError())

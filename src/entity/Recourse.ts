@@ -15,6 +15,9 @@ export class Recourse{
     @Column()
     text!:string
 
+    @Column()
+    date!:number
+
     @OneToOne(()=>Responce,(responce)=>responce.request)
     @JoinColumn()
     responce!:Responce
