@@ -19,7 +19,7 @@ router.post('/complete',async(req:Request,res:Response,next:NextFunction)=>{
     RequestController.completeRecourse(req,res,next)
 })
 
-router.put('/cancel/:id',async(req:Request,res:Response,next:NextFunction)=>{
+router.put('/cancel/recourse/',async(req:Request,res:Response,next:NextFunction)=>{
     RequestController.cancelRecourse(req,res,next)
 })
 

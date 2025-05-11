@@ -112,8 +112,9 @@ export class RequestController{
 
     static async cancelRecourse(req:Request, res:Response, next:NextFunction){
         try{
-            const {id} = req.params
+            const {id, text} = req.body
             const parseId = Number(id)
+            console.log(id+text)
             if(!id || isNaN(parseId)){
                 return next(ApiError.badData())
             }
@@ -123,6 +124,11 @@ export class RequestController{
                 return next(ApiError.badData())
             }
             await recourseRepo.update(findRecourse,{state:'cancel'})
+            if(text){
+                const responceRepo = DbContext.getRepository(Responce)
+                const createdResponce = responceRepo.create({text:text,request:findRecourse})
+                await responceRepo.save(createdResponce)
+            }
             res.status(200).json("Обращение отменено")
         }catch(err){
             console.log(err)
